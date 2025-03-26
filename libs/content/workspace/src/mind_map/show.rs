@@ -70,8 +70,8 @@ impl Grid {
 }
 
 impl MindMap {
-    pub fn new(core: &Lb) -> Self {
-        let graph = lockbook_data(core);
+    pub fn new(lb: &Lb) -> Self {
+        let graph = lockbook_data(lb);
         let positions = vec![egui::Pos2::ZERO; graph.len()];
         let thread_positions = vec![egui::Pos2::ZERO; graph.len()];
         Self {

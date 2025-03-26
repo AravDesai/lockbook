@@ -95,8 +95,8 @@ impl FileTree {
     }
 
     /// Asynchronously recalculates the suggested files; requests repaint when complete.
-    pub fn recalc_suggested_files(&mut self, core: &Lb, ctx: &egui::Context) {
-        let core = core.clone();
+    pub fn recalc_suggested_files(&mut self, lb: &Lb, ctx: &egui::Context) {
+        let core = lb.clone();
         let suggested = self.suggested_docs.clone();
         let ctx = ctx.clone();
 

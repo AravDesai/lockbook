@@ -3,12 +3,12 @@ use test_utils::*;
 
 /// Tests that operate on one device and sync (work should be none, deleted files should be pruned)
 
-async fn assert_stuff(core: &Lb) {
-    core.test_repo_integrity().await.unwrap();
-    assert::local_work_paths(core, &[]).await;
-    assert::server_work_paths(core, &[]).await;
-    assert::deleted_files_pruned(core);
-    assert::new_synced_client_core_equal(core).await;
+async fn assert_stuff(lb: &Lb) {
+    lb.test_repo_integrity().await.unwrap();
+    assert::local_work_paths(lb, &[]).await;
+    assert::server_work_paths(lb, &[]).await;
+    assert::deleted_files_pruned(lb);
+    assert::new_synced_client_core_equal(lb).await;
 }
 
 #[tokio::test]

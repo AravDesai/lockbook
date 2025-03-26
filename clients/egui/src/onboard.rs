@@ -14,7 +14,7 @@ use crate::settings::Settings;
 
 pub struct OnboardHandOff {
     pub settings: Arc<RwLock<Settings>>,
-    pub core: Lb,
+    pub lb: Lb,
     pub acct_data: AccountScreenInitData,
 }
 
@@ -41,7 +41,7 @@ impl Router {
 
 pub struct OnboardScreen {
     settings: Arc<RwLock<Settings>>,
-    pub core: Lb,
+    pub lb: Lb,
 
     update_tx: mpsc::Sender<Update>,
     update_rx: mpsc::Receiver<Update>,
@@ -64,12 +64,12 @@ pub struct OnboardScreen {
 }
 
 impl OnboardScreen {
-    pub fn new(settings: Arc<RwLock<Settings>>, core: Lb) -> Self {
+    pub fn new(settings: Arc<RwLock<Settings>>, lb: Lb) -> Self {
         let (update_tx, update_rx) = mpsc::channel();
 
         Self {
             settings,
-            core,
+            lb,
             update_tx,
             update_rx,
             router: Router::new(Route::Welcome, false),
@@ -95,7 +95,7 @@ impl OnboardScreen {
                     Ok(acct_data) => {
                         resp = Some(OnboardHandOff {
                             settings: self.settings.clone(),
-                            core: self.core.clone(),
+                            lb: self.lb.clone(),
                             acct_data,
                         });
                     }
@@ -127,7 +127,7 @@ impl OnboardScreen {
                     Ok(acct_data) => {
                         resp = Some(OnboardHandOff {
                             settings: self.settings.clone(),
-                            core: self.core.clone(),
+                            lb: self.lb.clone(),
                             acct_data,
                         });
                     }
@@ -365,7 +365,7 @@ impl OnboardScreen {
                                                 .show(ui)
                                                 .clicked()
                                             {
-                                                let core = self.core.clone();
+                                                let core = self.lb.clone();
                                                 let update_tx = self.update_tx.clone();
                                                 let ctx = ctx.clone();
                                                 thread::spawn(move || {
@@ -497,7 +497,7 @@ You can view your key again in the settings."#
     fn create_account(&mut self, ctx: &egui::Context) {
         self.router = Router::new(Route::Create, true);
 
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let uname = self.uname.clone();
         let update_tx = self.update_tx.clone();
         let ctx = ctx.clone();
@@ -532,7 +532,7 @@ You can view your key again in the settings."#
     fn import_account(&mut self, ctx: &egui::Context) {
         self.router = Router::new(Route::Import, true);
 
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let key = self.acct_str.clone();
         let tx = self.update_tx.clone();
         let ctx = ctx.clone();
@@ -582,20 +582,20 @@ fn set_button_style(ui: &mut egui::Ui) {
     ui.visuals_mut().widgets.hovered.fg_stroke = text_stroke;
 }
 
-fn load_account_data(core: &Lb) -> Result<AccountScreenInitData, LbErr> {
-    let files = match core.list_metadatas() {
+fn load_account_data(lb: &Lb) -> Result<AccountScreenInitData, LbErr> {
+    let files = match lb.list_metadatas() {
         Ok(files) => files,
         Err(err) => return Err(err),
     };
 
     // todo: a bunch of this logic is duplicated, and we could consider consolidating it
     // and letting the workspace manage this state in the background
-    let usage = match core.get_usage() {
+    let usage = match lb.get_usage() {
         Ok(metrics) => Ok(metrics.into()),
         Err(err) => return Err(err),
     };
 
-    let sync_status = core.get_last_synced_human_string();
+    let sync_status = lb.get_last_synced_human_string();
 
     Ok(AccountScreenInitData { sync_status, files, usage })
 }

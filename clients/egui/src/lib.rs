@@ -64,7 +64,7 @@ impl Lockbook {
             // request a new frame.
             Self::Splash(screen) => {
                 if let Some(handoff) = screen.update(ctx) {
-                    let SplashHandOff { settings, core, maybe_acct_data } = handoff;
+                    let SplashHandOff { settings, lb: core, maybe_acct_data } = handoff;
 
                     *self = match maybe_acct_data {
                         Some(acct_data) => {
@@ -83,7 +83,7 @@ impl Lockbook {
             // Account screen.
             Self::Onboard(screen) => {
                 if let Some(handoff) = screen.update(ctx) {
-                    let OnboardHandOff { settings, core, acct_data } = handoff;
+                    let OnboardHandOff { settings, lb: core, acct_data } = handoff;
 
                     let is_new_user = true;
                     let acct_scr = AccountScreen::new(settings, &core, acct_data, ctx, is_new_user);

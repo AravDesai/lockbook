@@ -322,7 +322,7 @@ impl Workspace {
             (Some(id), Some(files)) => {
                 if let Some(file) = files.files.get_by_id(id) {
                     file.name.clone()
-                } else if let Ok(file) = self.core.get_file_by_id(id) {
+                } else if let Ok(file) = self.lb.get_file_by_id(id) {
                     // read-through (can remove when we master cache refreshes)
                     file.name.clone()
                 } else {
@@ -403,11 +403,11 @@ impl ExtendedInput for egui::Context {
 
 // todo: use background thread
 // todo: refresh file tree view
-pub fn import_image(core: &Lb, file_id: Uuid, data: &[u8]) -> File {
-    let file = core
+pub fn import_image(lb: &Lb, file_id: Uuid, data: &[u8]) -> File {
+    let file = lb
         .get_file_by_id(file_id)
         .expect("get lockbook file for image");
-    let siblings = core
+    let siblings = lb
         .get_children(&file.parent)
         .expect("get lockbook siblings for image");
 
@@ -420,7 +420,7 @@ pub fn import_image(core: &Lb, file_id: Uuid, data: &[u8]) -> File {
             }
         }
         imports_folder.unwrap_or_else(|| {
-            core.create_file("imports", &file.parent, FileType::Folder)
+            lb.create_file("imports", &file.parent, FileType::Folder)
                 .expect("create lockbook folder for image")
         })
     };
@@ -437,24 +437,24 @@ pub fn import_image(core: &Lb, file_id: Uuid, data: &[u8]) -> File {
         .first()
         .unwrap_or(&"png");
 
-    let file = core
+    let file = lb
         .create_file(
             &format!("pasted_image_{}.{}", human_readable_time, file_extension),
             &imports_folder.id,
             FileType::Document,
         )
         .expect("create lockbook file for image");
-    core.write_document(file.id, data)
+    lb.write_document(file.id, data)
         .expect("write lockbook file for image");
 
     file
 }
 
-pub fn core_get_relative_path(core: &Lb, from: Uuid, to: Uuid) -> String {
-    let from_path = core
+pub fn core_get_relative_path(lb: &Lb, from: Uuid, to: Uuid) -> String {
+    let from_path = lb
         .get_path_by_id(from)
         .expect("get source file path for relative link");
-    let to_path = core
+    let to_path = lb
         .get_path_by_id(to)
         .expect("get target file path for relative link");
     get_relative_path(&from_path, &to_path)
@@ -510,10 +510,9 @@ pub fn canonicalize_path(path: &str) -> String {
     result.to_string_lossy().to_string()
 }
 
-pub fn core_get_by_relative_path(core: &Lb, from: Uuid, path: &Path) -> Result<File, String> {
+pub fn core_get_by_relative_path(lb: &Lb, from: Uuid, path: &Path) -> Result<File, String> {
     let target_path = if path.is_relative() {
-        let mut open_file_path =
-            PathBuf::from(core.get_path_by_id(from).map_err(|e| e.to_string())?);
+        let mut open_file_path = PathBuf::from(lb.get_path_by_id(from).map_err(|e| e.to_string())?);
         for component in path.components() {
             open_file_path.push(component);
         }
@@ -523,7 +522,7 @@ pub fn core_get_by_relative_path(core: &Lb, from: Uuid, path: &Path) -> Result<F
     } else {
         path.to_string_lossy().to_string()
     };
-    core.get_by_path(&target_path).map_err(|e| e.to_string())
+    lb.get_by_path(&target_path).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

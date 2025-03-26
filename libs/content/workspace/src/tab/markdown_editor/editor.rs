@@ -44,7 +44,7 @@ pub struct Response {
 
 pub struct Editor {
     // dependencies
-    pub core: Lb,
+    pub lb: Lb,
     pub client: reqwest::blocking::Client,
 
     // input
@@ -72,11 +72,11 @@ pub struct Editor {
 
 impl Editor {
     pub fn new(
-        core: Lb, content: &str, file_id: Uuid, hmac: Option<DocumentHmac>, needs_name: bool,
+        lb: Lb, content: &str, file_id: Uuid, hmac: Option<DocumentHmac>, needs_name: bool,
         plaintext_mode: bool,
     ) -> Self {
         Self {
-            core,
+            lb,
             client: Default::default(),
 
             file_id,
@@ -290,7 +290,7 @@ impl Editor {
         }
         if text_updated || selection_updated || theme_updated {
             self.images =
-                images::calc(&self.ast, &self.images, &self.client, &self.core, self.file_id, ui);
+                images::calc(&self.ast, &self.images, &self.client, &self.lb, self.file_id, ui);
         }
         self.galleys = galleys::calc(
             &self.ast,

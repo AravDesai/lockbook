@@ -17,10 +17,10 @@ pub struct AcceptShareParams {
 }
 
 impl AcceptShareModal {
-    pub fn new(core: &Lb) -> Self {
+    pub fn new(lb: &Lb) -> Self {
         Self {
-            requests: core.get_pending_shares().unwrap_or_default(),
-            username: core.get_account().unwrap().username.clone(),
+            requests: lb.get_pending_shares().unwrap_or_default(),
+            username: lb.get_account().unwrap().username.clone(),
         }
     }
 }

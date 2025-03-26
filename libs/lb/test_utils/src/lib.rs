@@ -29,8 +29,8 @@ pub async fn test_core() -> Lb {
     Lb::init(test_config()).await.unwrap()
 }
 
-pub async fn test_core_from(core: &Lb) -> Lb {
-    let account_string = core.export_account_private_key().unwrap();
+pub async fn test_core_from(lb: &Lb) -> Lb {
+    let account_string = lb.export_account_private_key().unwrap();
     let core = test_core().await;
     core.import_account(&account_string, Some(&url()))
         .await

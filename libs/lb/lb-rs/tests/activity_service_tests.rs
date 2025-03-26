@@ -7,36 +7,30 @@ use uuid::Uuid;
 
 #[tokio::test]
 async fn suggest_docs() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document = core.create_at_path("hello.md").await.unwrap();
-    core.write_document(document.id, "hello world".as_bytes())
+    let document = lb.create_at_path("hello.md").await.unwrap();
+    lb.write_document(document.id, "hello world".as_bytes())
         .await
         .unwrap();
     time::sleep(Duration::from_millis(100)).await;
 
-    let expected_suggestions = core
-        .suggested_docs(RankingWeights::default())
-        .await
-        .unwrap();
+    let expected_suggestions = lb.suggested_docs(RankingWeights::default()).await.unwrap();
 
     assert_eq!(vec![document.id], expected_suggestions);
 }
 
 #[tokio::test]
 async fn suggest_docs_empty() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let expected = core
-        .suggested_docs(RankingWeights::default())
-        .await
-        .unwrap();
+    let expected = lb.suggested_docs(RankingWeights::default()).await.unwrap();
     let actual: Vec<Uuid> = vec![];
 
     assert_eq!(actual, expected);
@@ -44,27 +38,27 @@ async fn suggest_docs_empty() {
 
 #[tokio::test]
 async fn write_count() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document1 = core.create_at_path("hello1.md").await.unwrap();
+    let document1 = lb.create_at_path("hello1.md").await.unwrap();
     for _ in 0..10 {
-        core.write_document(document1.id, "hello world".as_bytes())
+        lb.write_document(document1.id, "hello world".as_bytes())
             .await
             .unwrap();
     }
 
-    let document2 = core.create_at_path("hello2.md").await.unwrap();
+    let document2 = lb.create_at_path("hello2.md").await.unwrap();
     for _ in 0..20 {
-        core.write_document(document2.id, "hello world".as_bytes())
+        lb.write_document(document2.id, "hello world".as_bytes())
             .await
             .unwrap();
     }
 
     time::sleep(Duration::from_millis(100)).await;
-    let actual_suggestions = core
+    let actual_suggestions = lb
         .suggested_docs(RankingWeights { temporality: 0, io: 100 })
         .await
         .unwrap();
@@ -74,34 +68,34 @@ async fn write_count() {
 
 #[tokio::test]
 async fn write_count_multiple_docs() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document1 = core.create_at_path("hello.md").await.unwrap();
+    let document1 = lb.create_at_path("hello.md").await.unwrap();
     for _ in 0..10 {
-        core.write_document(document1.id, "hello world".as_bytes())
+        lb.write_document(document1.id, "hello world".as_bytes())
             .await
             .unwrap();
     }
 
-    let document2 = core.create_at_path("hello2.md").await.unwrap();
+    let document2 = lb.create_at_path("hello2.md").await.unwrap();
     for _ in 0..50 {
-        core.write_document(document2.id, "hello world".as_bytes())
+        lb.write_document(document2.id, "hello world".as_bytes())
             .await
             .unwrap();
     }
 
-    let document3 = core.create_at_path("hello3.md").await.unwrap();
+    let document3 = lb.create_at_path("hello3.md").await.unwrap();
     for _ in 0..55 {
-        core.write_document(document3.id, "hello world".as_bytes())
+        lb.write_document(document3.id, "hello world".as_bytes())
             .await
             .unwrap();
     }
 
     time::sleep(Duration::from_millis(100)).await;
-    let actual_suggestions = core
+    let actual_suggestions = lb
         .suggested_docs(RankingWeights { temporality: 0, io: 100 })
         .await
         .unwrap();
@@ -113,23 +107,23 @@ async fn write_count_multiple_docs() {
 
 #[tokio::test]
 async fn read_count() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document1 = core.create_at_path("hello1.md").await.unwrap();
+    let document1 = lb.create_at_path("hello1.md").await.unwrap();
     for _ in 0..10 {
-        core.read_document(document1.id, true).await.unwrap();
+        lb.read_document(document1.id, true).await.unwrap();
     }
 
-    let document2 = core.create_at_path("hello2.md").await.unwrap();
+    let document2 = lb.create_at_path("hello2.md").await.unwrap();
     for _ in 0..20 {
-        core.read_document(document2.id, true).await.unwrap();
+        lb.read_document(document2.id, true).await.unwrap();
     }
 
     time::sleep(Duration::from_millis(100)).await;
-    let actual_suggestions = core
+    let actual_suggestions = lb
         .suggested_docs(RankingWeights { temporality: 0, io: 100 })
         .await
         .unwrap();
@@ -139,28 +133,28 @@ async fn read_count() {
 
 #[tokio::test]
 async fn read_count_multiple_docs() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document1 = core.create_at_path("hello.md").await.unwrap();
+    let document1 = lb.create_at_path("hello.md").await.unwrap();
     for _ in 0..10 {
-        core.read_document(document1.id, true).await.unwrap();
+        lb.read_document(document1.id, true).await.unwrap();
     }
 
-    let document2 = core.create_at_path("hello2.md").await.unwrap();
+    let document2 = lb.create_at_path("hello2.md").await.unwrap();
     for _ in 0..20 {
-        core.read_document(document2.id, true).await.unwrap();
+        lb.read_document(document2.id, true).await.unwrap();
     }
 
-    let document3 = core.create_at_path("hello3.md").await.unwrap();
+    let document3 = lb.create_at_path("hello3.md").await.unwrap();
     for _ in 0..100 {
-        core.read_document(document3.id, true).await.unwrap();
+        lb.read_document(document3.id, true).await.unwrap();
     }
 
     time::sleep(Duration::from_millis(100)).await;
-    let actual_suggestions = core
+    let actual_suggestions = lb
         .suggested_docs(RankingWeights { temporality: 0, io: 100 })
         .await
         .unwrap();
@@ -172,21 +166,21 @@ async fn read_count_multiple_docs() {
 
 #[tokio::test]
 async fn last_read() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document1 = core.create_at_path("hello.md").await.unwrap();
-    core.read_document(document1.id, true).await.unwrap();
+    let document1 = lb.create_at_path("hello.md").await.unwrap();
+    lb.read_document(document1.id, true).await.unwrap();
 
     time::sleep(Duration::from_millis(100)).await;
 
-    let document2 = core.create_at_path("hello2.md").await.unwrap();
-    core.read_document(document2.id, true).await.unwrap();
+    let document2 = lb.create_at_path("hello2.md").await.unwrap();
+    lb.read_document(document2.id, true).await.unwrap();
 
     time::sleep(Duration::from_millis(100)).await;
-    let actual_suggestions = core
+    let actual_suggestions = lb
         .suggested_docs(RankingWeights { temporality: 100, io: 0 })
         .await
         .unwrap();
@@ -198,25 +192,25 @@ async fn last_read() {
 
 #[tokio::test]
 async fn last_write() {
-    let core: Lb = test_core().await;
-    core.create_account(&random_name(), &url(), false)
+    let lb: Lb = test_core().await;
+    lb.create_account(&random_name(), &url(), false)
         .await
         .unwrap();
 
-    let document1 = core.create_at_path("hello.md").await.unwrap();
-    core.write_document(document1.id, "hello world".as_bytes())
-        .await
-        .unwrap();
-
-    time::sleep(Duration::from_millis(100)).await;
-
-    let document2 = core.create_at_path("hello2.md").await.unwrap();
-    core.write_document(document2.id, "hello world".as_bytes())
+    let document1 = lb.create_at_path("hello.md").await.unwrap();
+    lb.write_document(document1.id, "hello world".as_bytes())
         .await
         .unwrap();
 
     time::sleep(Duration::from_millis(100)).await;
-    let actual_suggestions = core
+
+    let document2 = lb.create_at_path("hello2.md").await.unwrap();
+    lb.write_document(document2.id, "hello world".as_bytes())
+        .await
+        .unwrap();
+
+    time::sleep(Duration::from_millis(100)).await;
+    let actual_suggestions = lb
         .suggested_docs(RankingWeights { temporality: 100, io: 0 })
         .await
         .unwrap();

@@ -200,7 +200,7 @@ impl super::AccountScreen {
 
     pub fn perform_final_sync(&self, ctx: &egui::Context) {
         let sync_lock = self.sync.lock.clone();
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let update_tx = self.update_tx.clone();
         let ctx = ctx.clone();
 

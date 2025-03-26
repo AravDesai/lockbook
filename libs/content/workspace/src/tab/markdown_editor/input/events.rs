@@ -64,9 +64,9 @@ impl Editor {
                     for clip in content {
                         match clip {
                             ClipContent::Image(data) => {
-                                let file = tab::import_image(&self.core, self.file_id, &data);
+                                let file = tab::import_image(&self.lb, self.file_id, &data);
                                 let rel_path =
-                                    tab::core_get_relative_path(&self.core, self.file_id, file.id);
+                                    tab::core_get_relative_path(&self.lb, self.file_id, file.id);
                                 let markdown_image_link = format!("![{}]({})", file.name, rel_path);
 
                                 result.push(Event::Replace {

@@ -44,16 +44,16 @@ impl LinkNode {
     }
 }
 
-pub fn lockbook_data(core: &Lb) -> Graph {
+pub fn lockbook_data(lb: &Lb) -> Graph {
     let mut graph: Graph = Vec::new();
     let mut classify: Vec<NameId> = Vec::new();
     let mut id: usize = 0;
     let mut info: Vec<(String, String, Uuid)> = Vec::new();
 
-    for file in core.list_metadatas().unwrap() {
+    for file in lb.list_metadatas().unwrap() {
         if file.is_document() && file.name.ends_with(".md") {
             let file_id = file.id;
-            let doc = core.read_document(file.id, false).unwrap();
+            let doc = lb.read_document(file.id, false).unwrap();
             let doc = String::from_utf8(doc).unwrap();
             let name = file.name;
             info.push((name, doc, file_id));

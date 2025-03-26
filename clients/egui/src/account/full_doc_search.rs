@@ -33,7 +33,7 @@ pub struct Response {
 impl FullDocSearch {
     const X_MARGIN: f32 = 15.0;
 
-    pub fn show(&mut self, ui: &mut egui::Ui, core: &Lb) -> Response {
+    pub fn show(&mut self, ui: &mut egui::Ui, lb: &Lb) -> Response {
         let mut resp = Response::default();
         let results_resp = ui
             .vertical_centered(|ui| {
@@ -96,7 +96,7 @@ impl FullDocSearch {
 
                     // launch search if query changed
                     if output.response.changed() {
-                        let core = core.clone();
+                        let core = lb.clone();
                         let is_searching = self.is_searching.clone();
                         let query = self.query.clone();
                         let results = self.results.clone();
@@ -124,7 +124,7 @@ impl FullDocSearch {
                         });
                     }
                     egui::ScrollArea::vertical()
-                        .show(ui, |ui| self.show_results(ui, core))
+                        .show(ui, |ui| self.show_results(ui, lb))
                         .inner
                 } else {
                     None
@@ -136,7 +136,7 @@ impl FullDocSearch {
         resp
     }
 
-    pub fn show_results(&mut self, ui: &mut egui::Ui, core: &Lb) -> Option<Uuid> {
+    pub fn show_results(&mut self, ui: &mut egui::Ui, lb: &Lb) -> Option<Uuid> {
         ui.add_space(20.0);
 
         let Ok(results) = self.results.lock() else { return None };
@@ -145,7 +145,7 @@ impl FullDocSearch {
             let sr_res = ui.vertical(|ui| {
                 match sr {
                     SearchResult::DocumentMatch { id, path, content_matches } => {
-                        let file = &core.get_file_by_id(*id).unwrap();
+                        let file = &lb.get_file_by_id(*id).unwrap();
                         Self::show_file(ui, file, path);
                         ui.horizontal(|ui| {
                             ui.add_space(15.0);
@@ -156,7 +156,7 @@ impl FullDocSearch {
                         });
                     }
                     SearchResult::PathMatch { id, path, matched_indices: _, score: _ } => {
-                        let file = &core.get_file_by_id(*id).unwrap();
+                        let file = &lb.get_file_by_id(*id).unwrap();
                         Self::show_file(ui, file, path);
                     }
                 };

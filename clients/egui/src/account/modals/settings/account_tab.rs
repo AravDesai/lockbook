@@ -66,7 +66,7 @@ impl super::SettingsModal {
                         .clicked()
                     {
                         // todo: deduplicate
-                        fs::remove_dir_all(self.core.get_config().writeable_path).unwrap();
+                        fs::remove_dir_all(self.lb.get_config().writeable_path).unwrap();
                         std::process::exit(0);
                     }
                 });
@@ -136,7 +136,7 @@ impl super::SettingsModal {
     }
 
     fn generate_qr(&self, ctx: &egui::Context) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let update_tx = self.account.update_tx.clone();
         let ctx = ctx.clone();
 

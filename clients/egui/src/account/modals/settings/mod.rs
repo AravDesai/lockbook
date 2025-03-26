@@ -29,7 +29,7 @@ enum SettingsTab {
 }
 
 pub struct SettingsModal {
-    core: Lb,
+    lb: Lb,
     settings: Arc<RwLock<Settings>>,
     ws_persistent_store: WsPersistentStore,
     account: AccountSettings,
@@ -45,16 +45,16 @@ pub enum SettingsResponse {
 
 impl SettingsModal {
     pub fn new(
-        core: &Lb, s: &Arc<RwLock<Settings>>, ws_persistent_store: &WsPersistentStore,
+        lb: &Lb, s: &Arc<RwLock<Settings>>, ws_persistent_store: &WsPersistentStore,
     ) -> Self {
-        let export_result = core
+        let export_result = lb
             .export_account_phrase()
             .map_err(|err| format!("{:?}", err)); // TODO
 
         let (info_tx, info_rx) = mpsc::channel();
 
         std::thread::spawn({
-            let core = core.clone();
+            let core = lb.clone();
             let info_tx = info_tx.clone();
 
             move || {
@@ -76,7 +76,7 @@ impl SettingsModal {
 
         let debug = Arc::new(Mutex::new(String::new()));
         std::thread::spawn({
-            let core = core.clone();
+            let core = lb.clone();
             let debug = debug.clone();
 
             move || {
@@ -86,7 +86,7 @@ impl SettingsModal {
         });
 
         Self {
-            core: core.clone(),
+            lb: lb.clone(),
             settings: s.clone(),
             account: AccountSettings::new(export_result),
             usage: UsageSettings { info: None, info_rx, upgrading: None },

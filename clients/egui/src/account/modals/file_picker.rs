@@ -7,7 +7,7 @@ use workspace_rs::widgets::Button;
 use workspace_rs::show::DocType;
 
 pub struct FilePicker {
-    core: Lb,
+    lb: Lb,
     panels: Vec<Panel>,
     action: FilePickerAction,
 }
@@ -30,13 +30,13 @@ pub enum FilePickerAction {
 }
 
 impl FilePicker {
-    pub fn new(core: &Lb, action: FilePickerAction) -> Self {
-        let core = core.clone();
+    pub fn new(lb: &Lb, action: FilePickerAction) -> Self {
+        let core = lb.clone();
         let root = core.get_root().unwrap();
         let root_panel =
             Panel { root: root.clone(), children: core.get_children(&root.id).unwrap() };
 
-        Self { core, panels: vec![root_panel], action }
+        Self { lb: core, panels: vec![root_panel], action }
     }
 
     fn target_type(&self) -> FileType {
@@ -233,7 +233,7 @@ fn show_node(
         file_picker.panels.drain((drain_index)..);
         file_picker.panels.push(Panel {
             root: node.clone(),
-            children: file_picker.core.get_children(&node.id).unwrap(),
+            children: file_picker.lb.get_children(&node.id).unwrap(),
         });
     };
 }

@@ -267,13 +267,13 @@ pub struct CompletedFileCacheRefresh {
 #[derive(Clone)]
 pub struct TaskManager {
     pub tasks: Arc<Mutex<Tasks>>,
-    core: Lb,
+    lb: Lb,
     ctx: Context,
 }
 
 impl TaskManager {
-    pub fn new(core: Lb, ctx: Context) -> Self {
-        Self { tasks: Default::default(), core, ctx }
+    pub fn new(lb: Lb, ctx: Context) -> Self {
+        Self { tasks: Default::default(), lb, ctx }
     }
 
     pub fn queue_load(&mut self, request: LoadRequest) {
@@ -650,7 +650,7 @@ impl TaskManager {
     #[instrument(level = "warn", skip(self), fields(thread = format!("{:?}", thread::current().id())))]
     fn background_load(&self, request: LoadRequest) {
         let id = request.id;
-        let content_result = self.core.read_document_with_hmac(id, true);
+        let content_result = self.lb.read_document_with_hmac(id, true);
 
         {
             let mut tasks = self.tasks.lock().unwrap();
@@ -697,7 +697,7 @@ impl TaskManager {
     ) {
         let id = request.id;
         let new_hmac_result =
-            self.core
+            self.lb
                 .safe_write(request.id, old_hmac, content.clone().into_bytes()); // todo: unnecessary clone
 
         {
@@ -751,7 +751,7 @@ impl TaskManager {
                 sender.send(p).unwrap();
                 ctx.request_repaint();
             };
-            self.core.sync(Some(Box::new(progress_closure)))
+            self.lb.sync(Some(Box::new(progress_closure)))
         };
 
         {
@@ -783,9 +783,9 @@ impl TaskManager {
     #[instrument(level = "debug", skip(self), fields(thread = format!("{:?}", thread::current().id())))]
     fn background_sync_status_update(&self) {
         let status_result = || -> LbResult<DirtynessMsg> {
-            let last_synced = self.core.get_last_synced_human_string()?;
-            let dirty_files = self.core.get_local_changes()?;
-            let pending_shares = self.core.get_pending_shares()?;
+            let last_synced = self.lb.get_last_synced_human_string()?;
+            let dirty_files = self.lb.get_local_changes()?;
+            let pending_shares = self.lb.get_pending_shares()?;
             Ok(DirtynessMsg { last_synced, dirty_files, pending_shares })
         }();
 
@@ -814,7 +814,7 @@ impl TaskManager {
     /// Move a request to in-progress, then call this from a background thread
     #[instrument(level = "debug", skip(self), fields(thread = format!("{:?}", thread::current().id())))]
     fn background_file_cache_refresh(&self) {
-        let cache_result = FileCache::new(&self.core);
+        let cache_result = FileCache::new(&self.lb);
 
         {
             let mut tasks = self.tasks.lock().unwrap();

@@ -80,7 +80,7 @@ impl super::SettingsModal {
                     Some(Action::Next) => {
                         u.stage = UpgradingStage::Paying;
 
-                        let core = self.core.clone();
+                        let core = self.lb.clone();
                         let method = u.payment_method.take().unwrap();
                         let update_tx = u.update_tx.clone();
                         let ctx = ui.ctx().clone();

@@ -181,7 +181,7 @@ impl Workspace {
                                 }
 
                                 let is_beta = self
-                                    .core
+                                    .lb
                                     .get_account()
                                     .map(|a| a.is_beta())
                                     .unwrap_or_default();
@@ -203,7 +203,7 @@ impl Workspace {
                                         .show(ui)
                                         .clicked()
                                     {
-                                        self.upsert_mind_map(self.core.clone());
+                                        self.upsert_mind_map(self.lb.clone());
                                     }
                                 }
                             });
@@ -614,12 +614,12 @@ impl Workspace {
 
         // Ctrl-M to open mind map
         let is_beta = self
-            .core
+            .lb
             .get_account()
             .map(|a| a.is_beta())
             .unwrap_or_default();
         if is_beta && self.ctx.input_mut(|i| i.consume_key(COMMAND, egui::Key::M)) {
-            self.upsert_mind_map(self.core.clone());
+            self.upsert_mind_map(self.lb.clone());
         }
 
         // Ctrl-W to close current tab.

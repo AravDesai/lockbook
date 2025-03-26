@@ -195,8 +195,8 @@ impl Actions {
             .collect()
     }
 
-    async fn pick_random_file(core: &Lb, rng: &mut StdRng) -> Option<File> {
-        let mut possible_files = core.list_metadatas().await.unwrap();
+    async fn pick_random_file(lb: &Lb, rng: &mut StdRng) -> Option<File> {
+        let mut possible_files = lb.list_metadatas().await.unwrap();
         possible_files.retain(|meta| meta.parent != meta.id);
         possible_files.sort_by(Self::deterministic_sort());
 
@@ -220,8 +220,8 @@ impl Actions {
         }
     }
 
-    async fn pick_random_parent(core: &Lb, rng: &mut StdRng) -> File {
-        let mut possible_parents = core.list_metadatas().await.unwrap();
+    async fn pick_random_parent(lb: &Lb, rng: &mut StdRng) -> File {
+        let mut possible_parents = lb.list_metadatas().await.unwrap();
         possible_parents.retain(|meta| meta.is_folder());
         possible_parents.sort_by(Self::deterministic_sort());
 
@@ -229,8 +229,8 @@ impl Actions {
         possible_parents[parent_index].clone()
     }
 
-    async fn pick_random_document(core: &Lb, rng: &mut StdRng) -> Option<File> {
-        let mut possible_documents = core.list_metadatas().await.unwrap();
+    async fn pick_random_document(lb: &Lb, rng: &mut StdRng) -> Option<File> {
+        let mut possible_documents = lb.list_metadatas().await.unwrap();
         possible_documents.retain(|meta| meta.is_document());
         possible_documents.sort_by(Self::deterministic_sort());
 

@@ -19,8 +19,8 @@ pub fn account(lb: &Lb, username: String) -> Res<()> {
     Ok(())
 }
 
-pub fn server(core: &Lb) -> Res<()> {
-    let validation_failures = core.admin_validate_server()?;
+pub fn server(lb: &Lb) -> Res<()> {
+    let validation_failures = lb.admin_validate_server()?;
     println!("{:#?}", validation_failures);
     Ok(())
 }

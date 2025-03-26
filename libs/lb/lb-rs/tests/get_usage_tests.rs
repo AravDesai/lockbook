@@ -172,14 +172,14 @@ async fn usage_new_files_have_no_size() {
 
 #[tokio::test]
 async fn change_doc_over_data_cap() {
-    let core: Lb = test_core_with_account().await;
-    let document = core.create_at_path("hello.md").await.unwrap();
+    let lb: Lb = test_core_with_account().await;
+    let document = lb.create_at_path("hello.md").await.unwrap();
     let content: Vec<u8> = (0..(FREE_TIER_USAGE_SIZE - METADATA_FEE * 2))
         .map(|_| rand::random::<u8>())
         .collect();
-    core.write_document(document.id, &content).await.unwrap();
+    lb.write_document(document.id, &content).await.unwrap();
 
-    let result = core.sync(None).await;
+    let result = lb.sync(None).await;
 
     assert_eq!(result.unwrap_err().kind, LbErrKind::UsageIsOverDataCap);
 }
@@ -205,20 +205,20 @@ async fn old_file_and_new_large_one() {
 
 #[tokio::test]
 async fn upsert_meta_over_data_cap() {
-    let core: Lb = test_core_with_account().await;
+    let lb: Lb = test_core_with_account().await;
 
-    let document = core.create_at_path("document.md").await.unwrap();
+    let document = lb.create_at_path("document.md").await.unwrap();
 
     let content: Vec<u8> = (0..(FREE_TIER_USAGE_SIZE - 5 * METADATA_FEE))
         .map(|_| rand::random::<u8>())
         .collect();
 
-    core.write_document(document.id, &content).await.unwrap();
+    lb.write_document(document.id, &content).await.unwrap();
 
-    core.sync(None).await.unwrap();
+    lb.sync(None).await.unwrap();
 
     let hmac = {
-        core.ro_tx()
+        lb.ro_tx()
             .await
             .db()
             .base_metadata
@@ -228,39 +228,39 @@ async fn upsert_meta_over_data_cap() {
             .document_hmac()
             .cloned()
     };
-    let docs = AsyncDocs::from(&core.config);
+    let docs = AsyncDocs::from(&lb.config);
     let local_encrypted = docs.get(document.id, hmac).await.unwrap().value;
 
     let file_capacity =
         (FREE_TIER_USAGE_SIZE - local_encrypted.len() as u64) as f64 / METADATA_FEE as f64;
 
     for i in 0..file_capacity as i64 - 2 {
-        core.create_at_path(format!("document{}.md", i).as_str())
+        lb.create_at_path(format!("document{}.md", i).as_str())
             .await
             .unwrap();
-        core.sync(None).await.unwrap();
+        lb.sync(None).await.unwrap();
     }
 
-    core.create_at_path("the_file_that_broke_the_camel's_back.md")
+    lb.create_at_path("the_file_that_broke_the_camel's_back.md")
         .await
         .unwrap();
 
-    let result = core.sync(None).await;
+    let result = lb.sync(None).await;
     assert_eq!(result.unwrap_err().kind, LbErrKind::UsageIsOverDataCap);
 }
 
 #[tokio::test]
 async fn upsert_meta_empty_folder_over_data_cap() {
-    let core: Lb = test_core_with_account().await;
+    let lb: Lb = test_core_with_account().await;
     let free_tier_limit = FREE_TIER_USAGE_SIZE / METADATA_FEE;
-    let root = core.root().await.unwrap();
+    let root = lb.root().await.unwrap();
 
     for _ in 0..(free_tier_limit + 10) {
-        core.create_file(&uuid::Uuid::new_v4().to_string(), &root.id, FileType::Document)
+        lb.create_file(&uuid::Uuid::new_v4().to_string(), &root.id, FileType::Document)
             .await
             .unwrap();
     }
-    let result = core.sync(None);
+    let result = lb.sync(None);
 
     assert_eq!(result.await.unwrap_err().kind, LbErrKind::UsageIsOverDataCap);
 }

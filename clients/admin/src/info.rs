@@ -13,14 +13,14 @@ use time::Duration;
 
 use crate::Res;
 
-pub fn file(core: &Lb, id: Uuid) -> Res<()> {
-    let info = core.admin_file_info(id)?;
+pub fn file(lb: &Lb, id: Uuid) -> Res<()> {
+    let info = lb.admin_file_info(id)?;
     println!("id:\t\t\t{}", info.file.id());
     println!("file_type:\t\t{:?}", info.file.file_type());
     println!("parent:\t\t\t{}", info.file.parent());
     println!(
         "owner:\t\t\t{}",
-        core.admin_get_account_info(AccountIdentifier::PublicKey(info.file.owner().0))?
+        lb.admin_get_account_info(AccountIdentifier::PublicKey(info.file.owner().0))?
             .username
     );
     println!("explicitly_deleted:\t{}", info.file.explicitly_deleted());
@@ -29,12 +29,12 @@ pub fn file(core: &Lb, id: Uuid) -> Res<()> {
     for k in info.file.user_access_keys() {
         println!(
             "->\tencrypted_by: {}",
-            core.admin_get_account_info(AccountIdentifier::PublicKey(k.encrypted_by))?
+            lb.admin_get_account_info(AccountIdentifier::PublicKey(k.encrypted_by))?
                 .username
         );
         println!(
             "\tencrypted_for: {}",
-            core.admin_get_account_info(AccountIdentifier::PublicKey(k.encrypted_for))?
+            lb.admin_get_account_info(AccountIdentifier::PublicKey(k.encrypted_for))?
                 .username
         );
         println!("\tmode: {:?}", k.mode);

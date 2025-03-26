@@ -9,7 +9,7 @@ use crate::settings::Settings;
 
 pub struct SplashHandOff {
     pub settings: Arc<RwLock<Settings>>,
-    pub core: Lb,
+    pub lb: Lb,
     pub maybe_acct_data: Option<AccountScreenInitData>,
 }
 
@@ -120,7 +120,7 @@ impl SplashScreen {
                     self.status = Some("Done.".to_string());
                     resp = Some(SplashHandOff {
                         settings: self.settings.clone(),
-                        core,
+                        lb: core,
                         maybe_acct_data,
                     });
                 }
@@ -143,8 +143,8 @@ impl SplashScreen {
     }
 }
 
-fn is_signed_in(core: &Lb) -> Result<bool, String> {
-    match core.get_account() {
+fn is_signed_in(lb: &Lb) -> Result<bool, String> {
+    match lb.get_account() {
         Ok(_acct) => Ok(true),
         Err(err) => match err.kind {
             LbErrKind::AccountNonexistent => Ok(false),

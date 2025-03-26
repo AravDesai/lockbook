@@ -184,10 +184,10 @@ fn edit_file_with_editor<S: AsRef<Path>>(editor: Editor, path: S) -> bool {
         .success()
 }
 
-fn set_up_auto_save<P: AsRef<Path>>(core: &Lb, id: Uuid, path: P) -> Option<Hotwatch> {
+fn set_up_auto_save<P: AsRef<Path>>(lb: &Lb, id: Uuid, path: P) -> Option<Hotwatch> {
     match Hotwatch::new_with_custom_delay(core::time::Duration::from_secs(5)) {
         Ok(mut watcher) => {
-            let core = core.clone();
+            let core = lb.clone();
             let path = PathBuf::from(path.as_ref());
 
             watcher

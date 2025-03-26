@@ -11,7 +11,7 @@ use lb::Uuid;
 use workspace_rs::show::DocType;
 
 pub struct SearchModal {
-    core: Lb,
+    lb: Lb,
     is_searching: Arc<AtomicBool>,
     input: Arc<Mutex<String>>,
     results: Arc<Mutex<Vec<SearchResult>>>,
@@ -21,9 +21,9 @@ pub struct SearchModal {
 }
 
 impl SearchModal {
-    pub fn new(core: Lb) -> Self {
+    pub fn new(lb: Lb) -> Self {
         Self {
-            core,
+            lb,
             is_searching: Default::default(),
             input: Default::default(),
             results: Default::default(),
@@ -226,7 +226,7 @@ impl super::Modal for SearchModal {
 
         // launch search if query changed
         if self.arrow_index.is_none() && out.response.changed() {
-            let core = self.core.clone();
+            let core = self.lb.clone();
             let is_searching = self.is_searching.clone();
             let query = self.input.clone();
             let results = self.results.clone();

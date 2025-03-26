@@ -48,9 +48,9 @@ pub async fn new_synced_client_core_equal(lb: &Lb) {
     cores_equal(lb, &new_client).await;
 }
 
-pub async fn all_ids(core: &Lb, expected_ids: &[Uuid]) {
+pub async fn all_ids(lb: &Lb, expected_ids: &[Uuid]) {
     let mut expected_ids: Vec<Uuid> = expected_ids.to_vec();
-    let mut actual_ids: Vec<Uuid> = core
+    let mut actual_ids: Vec<Uuid> = lb
         .list_metadatas()
         .await
         .unwrap()
@@ -68,9 +68,9 @@ pub async fn all_ids(core: &Lb, expected_ids: &[Uuid]) {
     }
 }
 
-pub async fn all_children_ids(core: &Lb, id: &Uuid, expected_ids: &[Uuid]) {
+pub async fn all_children_ids(lb: &Lb, id: &Uuid, expected_ids: &[Uuid]) {
     let mut expected_ids: Vec<Uuid> = expected_ids.to_vec();
-    let mut actual_ids: Vec<Uuid> = core
+    let mut actual_ids: Vec<Uuid> = lb
         .get_children(id)
         .await
         .unwrap()
@@ -88,9 +88,9 @@ pub async fn all_children_ids(core: &Lb, id: &Uuid, expected_ids: &[Uuid]) {
     }
 }
 
-pub async fn all_recursive_children_ids(core: &Lb, id: Uuid, expected_ids: &[Uuid]) {
+pub async fn all_recursive_children_ids(lb: &Lb, id: Uuid, expected_ids: &[Uuid]) {
     let mut expected_ids: Vec<Uuid> = expected_ids.to_vec();
-    let mut actual_ids: Vec<Uuid> = core
+    let mut actual_ids: Vec<Uuid> = lb
         .get_and_get_children_recursively(&id)
         .await
         .unwrap()
@@ -108,12 +108,12 @@ pub async fn all_recursive_children_ids(core: &Lb, id: Uuid, expected_ids: &[Uui
     }
 }
 
-pub async fn all_paths(core: &Lb, expected_paths: &[&str]) {
+pub async fn all_paths(lb: &Lb, expected_paths: &[&str]) {
     let mut expected_paths: Vec<String> = expected_paths
         .iter()
         .map(|&path| String::from(path))
         .collect();
-    let mut actual_paths: Vec<String> = core.list_paths(None).await.unwrap();
+    let mut actual_paths: Vec<String> = lb.list_paths(None).await.unwrap();
 
     actual_paths.sort();
     expected_paths.sort();
@@ -154,7 +154,7 @@ pub async fn all_document_contents(db: &Lb, expected_contents_by_path: &[(&str, 
     }
 }
 
-pub async fn all_pending_shares(core: &Lb, expected_names: &[&str]) {
+pub async fn all_pending_shares(lb: &Lb, expected_names: &[&str]) {
     if expected_names.iter().any(|&path| path.contains('/')) {
         panic!(
             "improper call to assert_all_pending_shares; expected_names must not contain with '/'. expected_names={:?}",
@@ -165,7 +165,7 @@ pub async fn all_pending_shares(core: &Lb, expected_names: &[&str]) {
         .iter()
         .map(|&name| String::from(name))
         .collect();
-    let mut actual_names: Vec<String> = core
+    let mut actual_names: Vec<String> = lb
         .get_pending_shares()
         .await
         .unwrap()
@@ -211,14 +211,14 @@ pub async fn local_work_paths(lb: &Lb, expected_paths: &[&'static str]) {
     }
 }
 
-pub async fn server_work_paths(core: &Lb, expected_paths: &[&'static str]) {
+pub async fn server_work_paths(lb: &Lb, expected_paths: &[&'static str]) {
     let mut expected_paths = expected_paths.to_vec();
 
-    let tx = core.ro_tx().await;
+    let tx = lb.ro_tx().await;
     let db = tx.db();
 
     let account = db.account.get().unwrap();
-    let remote_changes = core
+    let remote_changes = lb
         .client
         .request(
             account,
@@ -246,7 +246,7 @@ pub async fn server_work_paths(core: &Lb, expected_paths: &[&'static str]) {
         .filter(|id| !remote.in_pending_share(id).unwrap())
         .collect::<Vec<_>>()
         .iter()
-        .map(|id| remote.id_to_path(id, &core.keychain))
+        .map(|id| remote.id_to_path(id, &lb.keychain))
         .collect::<Result<Vec<String>, _>>()
         .unwrap();
     actual_paths.sort_unstable();

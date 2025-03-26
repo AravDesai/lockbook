@@ -32,7 +32,7 @@ use self::tree::FileTree;
 
 pub struct AccountScreen {
     settings: Arc<RwLock<Settings>>,
-    pub core: Lb,
+    pub lb: Lb,
     toasts: egui_notify::Toasts,
 
     update_tx: mpsc::Sender<AccountUpdate>,
@@ -50,10 +50,10 @@ pub struct AccountScreen {
 
 impl AccountScreen {
     pub fn new(
-        settings: Arc<RwLock<Settings>>, core: &Lb, acct_data: AccountScreenInitData,
+        settings: Arc<RwLock<Settings>>, lb: &Lb, acct_data: AccountScreenInitData,
         ctx: &egui::Context, is_new_user: bool,
     ) -> Self {
-        let core = core.clone();
+        let core = lb.clone();
         let (update_tx, update_rx) = mpsc::channel();
 
         let AccountScreenInitData { sync_status, files, usage } = acct_data;
@@ -65,7 +65,7 @@ impl AccountScreen {
 
         let mut result = Self {
             settings,
-            core: core.clone(),
+            lb: core.clone(),
             toasts,
             update_tx,
             update_rx,
@@ -150,7 +150,7 @@ impl AccountScreen {
                         });
 
                     ui.vertical(|ui| {
-                        let full_doc_search_resp = self.full_search_doc.show(ui, &self.core);
+                        let full_doc_search_resp = self.full_search_doc.show(ui, &self.lb);
                         if let Some(file) = full_doc_search_resp.file_to_open {
                             self.workspace.open_file(file, false, true);
                         }
@@ -212,7 +212,7 @@ impl AccountScreen {
                             break;
                         }
                     }
-                    self.tree.recalc_suggested_files(&self.core, ctx);
+                    self.tree.recalc_suggested_files(&self.lb, ctx);
                     ctx.request_repaint();
                 }
                 if let Some((id, new_parent)) = wso.file_moved {
@@ -247,7 +247,7 @@ impl AccountScreen {
             });
 
         if self.is_new_user {
-            if let Ok(metas) = self.core.list_metadatas() {
+            if let Ok(metas) = self.lb.list_metadatas() {
                 if let Some(welcome_doc) = metas.iter().find(|meta| meta.name == "welcome.md") {
                     self.workspace.open_file(welcome_doc.id, false, true);
                 }
@@ -278,31 +278,24 @@ impl AccountScreen {
             match update {
                 AccountUpdate::OpenModal(open_modal) => match open_modal {
                     OpenModal::AcceptShare => {
-                        self.modals.accept_share = Some(AcceptShareModal::new(&self.core));
+                        self.modals.accept_share = Some(AcceptShareModal::new(&self.lb));
                     }
                     OpenModal::ConfirmDelete(files) => {
                         self.modals.confirm_delete = Some(ConfirmDeleteModal::new(files));
                     }
                     OpenModal::PickShareParent(target) => {
-                        self.modals.file_picker = Some(FilePicker::new(
-                            &self.core,
-                            FilePickerAction::AcceptShare(target),
-                        ));
+                        self.modals.file_picker =
+                            Some(FilePicker::new(&self.lb, FilePickerAction::AcceptShare(target)));
                     }
                     OpenModal::PickDropParent(drops) => {
-                        self.modals.file_picker = Some(FilePicker::new(
-                            &self.core,
-                            FilePickerAction::DroppedFiles(drops),
-                        ));
+                        self.modals.file_picker =
+                            Some(FilePicker::new(&self.lb, FilePickerAction::DroppedFiles(drops)));
                     }
                     OpenModal::InitiateShare(target) => self.open_share_modal(target),
                     OpenModal::NewFolder(maybe_parent) => self.open_new_folder_modal(maybe_parent),
                     OpenModal::Settings => {
-                        self.modals.settings = Some(SettingsModal::new(
-                            &self.core,
-                            &self.settings,
-                            &self.workspace.cfg,
-                        ));
+                        self.modals.settings =
+                            Some(SettingsModal::new(&self.lb, &self.settings, &self.workspace.cfg));
                     }
                 },
                 AccountUpdate::ShareAccepted(result) => match result {
@@ -326,7 +319,7 @@ impl AccountScreen {
                     let mut files = self.tree.files.clone();
                     files.retain(|file| file.id != f.id);
                     self.tree.update_files(files);
-                    self.tree.recalc_suggested_files(&self.core, ctx);
+                    self.tree.recalc_suggested_files(&self.lb, ctx);
                 }
                 AccountUpdate::DoneDeleting => self.modals.confirm_delete = None,
                 AccountUpdate::ReloadTree(files) => self.tree.update_files(files),
@@ -383,7 +376,7 @@ impl AccountScreen {
             if let Some(search) = &mut self.modals.search {
                 search.focus_select_all();
             } else {
-                self.modals.search = Some(SearchModal::new(self.core.clone()));
+                self.modals.search = Some(SearchModal::new(self.lb.clone()));
             }
         }
 
@@ -392,7 +385,7 @@ impl AccountScreen {
             && ctx.input_mut(|i| i.consume_key(COMMAND, egui::Key::Comma))
         {
             self.modals.settings =
-                Some(SettingsModal::new(&self.core, &self.settings, &self.workspace.cfg));
+                Some(SettingsModal::new(&self.lb, &self.settings, &self.workspace.cfg));
         }
 
         // Ctrl-/ to toggle the help modal.
@@ -550,7 +543,7 @@ impl AccountScreen {
     }
 
     pub fn refresh_tree(&self, ctx: &egui::Context) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let ctx = ctx.clone();
 
         let update_tx = self.update_tx.clone();
@@ -573,10 +566,10 @@ impl AccountScreen {
                     f.parent
                 }
             }
-            None => self.core.get_root().unwrap().id,
+            None => self.lb.get_root().unwrap().id,
         };
 
-        let parent_path = self.core.get_path_by_id(parent_id).unwrap();
+        let parent_path = self.lb.get_path_by_id(parent_id).unwrap();
         self.modals.new_folder = Some(NewFolderModal::new(parent_path));
     }
 
@@ -585,9 +578,9 @@ impl AccountScreen {
     }
 
     fn create_folder(&mut self, params: NewFileParams) {
-        let parent = self.core.get_by_path(&params.parent_path).unwrap();
+        let parent = self.lb.get_by_path(&params.parent_path).unwrap();
 
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let update_tx = self.update_tx.clone();
         thread::spawn(move || {
             let result = core
@@ -610,7 +603,7 @@ impl AccountScreen {
     }
 
     fn create_share(&mut self, params: CreateShareParams) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let update_tx = self.update_tx.clone();
 
         thread::spawn(move || {
@@ -654,7 +647,7 @@ impl AccountScreen {
             if self.tree.files.get_by_id(f).parent == target {
                 continue;
             }
-            if let Err(err) = self.core.move_file(&f, &target) {
+            if let Err(err) = self.lb.move_file(&f, &target) {
                 // todo: show error
                 println!("error moving file: {:?}", err);
                 return;
@@ -670,7 +663,7 @@ impl AccountScreen {
 
     fn export_file(&mut self, f: File, dest: PathBuf) {
         println!("export_file");
-        let res = self.core.export_files(
+        let res = self.lb.export_files(
             f.id,
             dest.clone(),
             true,
@@ -696,7 +689,7 @@ impl AccountScreen {
     }
 
     fn accept_share(&self, ctx: &egui::Context, target: File, parent: File) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let update_tx = self.update_tx.clone();
         let ctx = ctx.clone();
 
@@ -714,7 +707,7 @@ impl AccountScreen {
     }
 
     fn delete_share(&self, target: File) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
 
         thread::spawn(move || {
             core.delete_pending_share(&target.id)
@@ -724,7 +717,7 @@ impl AccountScreen {
     }
 
     fn dropped_files(&self, ctx: &egui::Context, drops: Vec<egui::DroppedFile>, parent: File) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let ctx = ctx.clone();
         let update_tx = self.update_tx.clone();
         let paths = drops
@@ -757,7 +750,7 @@ impl AccountScreen {
     }
 
     fn delete_files(&mut self, ctx: &egui::Context, files: Vec<File>) {
-        let core = self.core.clone();
+        let core = self.lb.clone();
         let update_tx = self.update_tx.clone();
         let ctx = ctx.clone();
 

@@ -26,7 +26,7 @@ pub enum ImageState {
 }
 
 pub fn calc(
-    ast: &Ast, prior_cache: &ImageCache, client: &reqwest::blocking::Client, core: &Lb,
+    ast: &Ast, prior_cache: &ImageCache, client: &reqwest::blocking::Client, lb: &Lb,
     file_id: Uuid, ui: &Ui,
 ) -> ImageCache {
     let mut result = ImageCache::default();
@@ -49,7 +49,7 @@ pub fn calc(
                 let url = url.clone();
                 let image_state: Arc<Mutex<ImageState>> = Default::default();
                 let client = client.clone();
-                let core = core.clone();
+                let core = lb.clone();
                 let ctx = ui.ctx().clone();
 
                 result.map.insert(url.clone(), image_state.clone());

@@ -47,7 +47,7 @@ pub struct Workspace {
     // Resources & configuration
     pub cfg: WsPersistentStore,
     pub ctx: Context,
-    pub core: Lb,
+    pub lb: Lb,
     pub show_tabs: bool,              // set on mobile to hide the tab strip
     pub focused_parent: Option<Uuid>, // set to the folder where new files should be created
 
@@ -57,8 +57,8 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(core: &Lb, ctx: &Context) -> Self {
-        let writable_dir = core.get_config().writeable_path;
+    pub fn new(lb: &Lb, ctx: &Context) -> Self {
+        let writable_dir = lb.get_config().writeable_path;
         let writeable_dir = Path::new(&writable_dir);
         let writeable_path = writeable_dir.join("ws_persistence.json");
 
@@ -67,7 +67,7 @@ impl Workspace {
             current_tab: Default::default(),
             user_last_seen: Instant::now(),
 
-            tasks: TaskManager::new(core.clone(), ctx.clone()),
+            tasks: TaskManager::new(lb.clone(), ctx.clone()),
             files: None,
             last_sync_completed: Default::default(),
             last_save_all: Default::default(),
@@ -78,7 +78,7 @@ impl Workspace {
 
             cfg: WsPersistentStore::new(writeable_path),
             ctx: ctx.clone(),
-            core: core.clone(),
+            lb: lb.clone(),
             show_tabs: true,
             focused_parent: Default::default(),
 
@@ -89,7 +89,7 @@ impl Workspace {
         let (open_tabs, current_tab) = ws.cfg.get_tabs();
 
         open_tabs.iter().for_each(|&file_id| {
-            if core.get_file_by_id(file_id).is_ok() {
+            if lb.get_file_by_id(file_id).is_ok() {
                 info!(id = ?file_id, "opening persisted tab");
                 ws.open_file(file_id, false, false);
             }
@@ -106,9 +106,9 @@ impl Workspace {
     }
 
     // todo: what happens if a save is in progress? what about non-file tabs?
-    pub fn invalidate_egui_references(&mut self, ctx: &Context, core: &Lb) {
+    pub fn invalidate_egui_references(&mut self, ctx: &Context, lb: &Lb) {
         self.ctx = ctx.clone();
-        self.core = core.clone();
+        self.lb = lb.clone();
 
         let ids: Vec<Uuid> = self.tabs.iter().flat_map(|tab| tab.id()).collect();
         let maybe_current_tab_id = self.current_tab().map(|tab| tab.id());
@@ -288,8 +288,8 @@ impl Workspace {
                     };
 
                     let ctx = self.ctx.clone();
-                    let core = self.core.clone();
-                    let writeable_dir = &self.core.get_config().writeable_path;
+                    let core = self.lb.clone();
+                    let writeable_dir = &self.lb.get_config().writeable_path;
                     let show_tabs = self.show_tabs;
 
                     let canvas_settings = self
@@ -310,7 +310,7 @@ impl Workspace {
                             }
                         };
 
-                        let ext = match self.core.get_file_by_id(id) {
+                        let ext = match self.lb.get_file_by_id(id) {
                             Ok(file) => file.name.split('.').last().unwrap_or_default().to_owned(),
                             Err(e) => {
                                 self.out
@@ -575,9 +575,9 @@ impl Workspace {
     pub fn create_file(&mut self, is_drawing: bool) {
         let focused_parent = self
             .focused_parent
-            .unwrap_or_else(|| self.core.get_root().unwrap().id);
+            .unwrap_or_else(|| self.lb.get_root().unwrap().id);
 
-        let focused_parent = self.core.get_file_by_id(focused_parent).unwrap();
+        let focused_parent = self.lb.get_file_by_id(focused_parent).unwrap();
         let focused_parent = if focused_parent.file_type == FileType::Document {
             focused_parent.parent
         } else {
@@ -586,10 +586,10 @@ impl Workspace {
 
         let file_format = if is_drawing { "svg" } else { "md" };
         let new_file = NameComponents::from(&format!("untitled.{}", file_format))
-            .next_in_children(self.core.get_children(&focused_parent).unwrap());
+            .next_in_children(self.lb.get_children(&focused_parent).unwrap());
 
         let result = self
-            .core
+            .lb
             .create_file(new_file.to_name().as_str(), &focused_parent, FileType::Document)
             .map_err(|err| format!("{:?}", err));
 
@@ -598,17 +598,17 @@ impl Workspace {
     }
 
     /// Opens or focuses the tab for the mind map
-    pub fn upsert_mind_map(&mut self, core: Lb) {
+    pub fn upsert_mind_map(&mut self, lb: Lb) {
         if let Some(i) = self.tabs.iter().position(|t| t.mind_map().is_some()) {
             self.make_current(i);
         } else {
-            self.create_tab(ContentState::Open(TabContent::MindMap(MindMap::new(&core))), true);
+            self.create_tab(ContentState::Open(TabContent::MindMap(MindMap::new(&lb))), true);
         };
     }
 
     pub fn rename_file(&mut self, req: (Uuid, String), by_user: bool) {
         let (id, new_name) = req;
-        match self.core.rename_file(&id, &new_name) {
+        match self.lb.rename_file(&id, &new_name) {
             Ok(()) => {
                 self.file_renamed(id, new_name);
             }
@@ -647,7 +647,7 @@ impl Workspace {
 
     pub fn move_file(&mut self, req: (Uuid, Uuid)) {
         let (id, new_parent) = req;
-        match self.core.move_file(&id, &new_parent) {
+        match self.lb.move_file(&id, &new_parent) {
             Ok(()) => {
                 self.out.file_moved = Some((id, new_parent));
                 self.tasks.queue_file_cache_refresh();
